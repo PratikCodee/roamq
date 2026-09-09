@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, LayerGroup } from 'react-leaflet';
 import L from 'leaflet';
-import { Navigation } from 'lucide-react';
+import { Navigation, CloudRain, Sun, Flame, Video } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { Place, Hotel as HotelType, Restaurant, Activity, Provider } from '@/types';
 import type { Route } from '@/router/Router';
+import { VideoModal } from '@/components/ui/VideoModal';
 
 type MarkerType = 'place' | 'hotel' | 'restaurant' | 'activity' | 'provider';
+type SeasonFilter = 'all' | 'monsoon' | 'winter' | 'summer';
 
 interface MapItem {
   id: string;
@@ -20,6 +22,10 @@ interface MapItem {
   description?: string;
   location?: string;
   priceInfo?: string;
+  seasons?: string[];
+  videoUrl?: string;
+  seasonalHighlight?: string;
+  originalPlace?: Place;
   route: Route;
 }
 
@@ -90,6 +96,8 @@ export function MapView({
   const [activeFilters, setActiveFilters] = useState<Set<MarkerType>>(
     new Set(['place', 'hotel', 'restaurant', 'activity', 'provider']),
   );
+  const [seasonFilter, setSeasonFilter] = useState<SeasonFilter>('all');
+  const [videoModalPlace, setVideoModalPlace] = useState<Place | null>(null);
 
   const allItems = useMemo<MapItem[]>(() => {
     const map: MapItem[] = [
@@ -97,7 +105,8 @@ export function MapView({
         id: p.id, name: p.name, lat: p.lat, lng: p.lng, type: 'place' as const,
         category: p.category, isHidden: p.isHiddenGem, rating: p.rating,
         description: p.description, location: p.location,
-        priceInfo: p.entryFee,
+        priceInfo: p.entryFee, seasons: p.seasons, videoUrl: p.videoUrl,
+        seasonalHighlight: p.seasonalHighlight, originalPlace: p,
         route: { name: 'places', destinationId } as Route,
       })),
       ...hotels.map((h) => ({
@@ -141,7 +150,14 @@ export function MapView({
     return cache;
   }, [allItems]);
 
-  const visibleItems = allItems.filter((i) => activeFilters.has(i.type));
+  const visibleItems = allItems.filter((i) => {
+    if (!activeFilters.has(i.type)) return false;
+    if (seasonFilter !== 'all' && i.type === 'place') {
+      if (!i.seasons || i.seasons.length === 0) return true;
+      return i.seasons.includes(seasonFilter) || i.seasons.includes('year-round');
+    }
+    return true;
+  });
 
   const toggle = (t: MarkerType) =>
     setActiveFilters((prev) => {
@@ -156,26 +172,53 @@ export function MapView({
 
   return (
     <div className="card overflow-visible">
-      <div className="flex flex-wrap items-center gap-2 border-b border-navy-100 p-4">
-        <span className="mr-1 flex items-center gap-1.5 text-sm font-semibold text-navy-700">
-          <Navigation size={15} className="text-ocean-600" /> Map layers
-        </span>
-        {(Object.keys(typeConfig) as MarkerType[]).map((t) => {
-          const cfg = typeConfig[t];
-          const active = activeFilters.has(t);
-          return (
+      {/* Top Filter Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-navy-100 p-4">
+        {/* Layer Filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="mr-1 flex items-center gap-1.5 text-xs font-bold text-navy-700 uppercase tracking-wider">
+            <Navigation size={14} className="text-ocean-600" /> Layers:
+          </span>
+          {(Object.keys(typeConfig) as MarkerType[]).map((t) => {
+            const cfg = typeConfig[t];
+            const active = activeFilters.has(t);
+            return (
+              <button
+                key={t}
+                onClick={() => toggle(t)}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition ${
+                  active ? `${cfg.bgClass} text-white` : 'bg-navy-50 text-navy-400 hover:bg-navy-100'
+                }`}
+              >
+                <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: cfg.pinColor }} />
+                {cfg.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Season Filter Chips */}
+        <div className="flex items-center gap-1.5 bg-navy-50 p-1 rounded-2xl border border-navy-100">
+          <span className="px-2 text-[11px] font-bold text-navy-500 uppercase tracking-wider">Season:</span>
+          {[
+            { id: 'all', label: 'All', emoji: '🌐' },
+            { id: 'monsoon', label: 'Monsoon', emoji: '🌧️' },
+            { id: 'winter', label: 'Winter', emoji: '☀️' },
+            { id: 'summer', label: 'Summer', emoji: '🥭' },
+          ].map((s) => (
             <button
-              key={t}
-              onClick={() => toggle(t)}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                active ? `${cfg.bgClass} text-white` : 'bg-navy-50 text-navy-400'
+              key={s.id}
+              onClick={() => setSeasonFilter(s.id as SeasonFilter)}
+              className={`flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-bold transition ${
+                seasonFilter === s.id
+                  ? 'bg-ocean-600 text-white shadow-sm'
+                  : 'text-navy-600 hover:bg-navy-100'
               }`}
             >
-              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: cfg.pinColor }} />
-              {cfg.label}
+              <span>{s.emoji}</span> {s.label}
             </button>
-          );
-        })}
+          ))}
+        </div>
       </div>
 
       <div className={`relative ${height} w-full overflow-hidden`}>
@@ -205,32 +248,44 @@ export function MapView({
                       icon={icons[iconKey]}
                     >
                       <Popup>
-                        <div className="min-w-[200px]">
+                        <div className="min-w-[210px] p-0.5">
                           <div className="flex items-start justify-between gap-2">
                             <p className="text-sm font-bold text-navy-900">{item.name}</p>
                             {item.isHidden && (
-                              <span className="rounded-full bg-sand-100 px-1.5 py-0.5 text-[10px] font-semibold text-sand-700">Hidden Gem</span>
+                              <span className="rounded-full bg-sand-100 px-1.5 py-0.5 text-[10px] font-semibold text-sand-700 shrink-0">Gem</span>
                             )}
                           </div>
                           <p className="mt-0.5 text-xs font-medium text-ocean-600">{typeLabel[item.type]} · {item.category}</p>
                           {item.rating && (
                             <p className="mt-1 text-xs text-navy-600">★ {item.rating} rating</p>
                           )}
-                          {item.description && (
+
+                          {item.seasonalHighlight && (
+                            <div className="mt-1.5 rounded-lg bg-ocean-50 p-2 text-[11px] text-ocean-900 leading-tight font-medium border border-ocean-100">
+                              {item.seasonalHighlight}
+                            </div>
+                          )}
+
+                          {item.description && !item.seasonalHighlight && (
                             <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-navy-500">{item.description}</p>
                           )}
-                          {item.location && (
-                            <p className="mt-1 text-xs text-navy-400">{item.location}</p>
-                          )}
-                          {item.priceInfo && (
-                            <p className="mt-1 text-xs font-semibold text-navy-700">{item.priceInfo}</p>
-                          )}
-                          <button
-                            onClick={() => onNavigate(item.route)}
-                            className="mt-2 w-full rounded-lg bg-ocean-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-ocean-700"
-                          >
-                            View Details
-                          </button>
+
+                          <div className="mt-2.5 flex items-center gap-1.5">
+                            {item.originalPlace && item.videoUrl && (
+                              <button
+                                onClick={() => setVideoModalPlace(item.originalPlace!)}
+                                className="flex-1 rounded-lg bg-navy-900 px-2 py-1.5 text-[11px] font-bold text-white transition hover:bg-navy-800 flex items-center justify-center gap-1"
+                              >
+                                <Video size={11} className="text-sand-400" /> Watch 🎥
+                              </button>
+                            )}
+                            <button
+                              onClick={() => onNavigate(item.route)}
+                              className="flex-1 rounded-lg bg-ocean-600 px-2 py-1.5 text-[11px] font-bold text-white transition hover:bg-ocean-700"
+                            >
+                              Details →
+                            </button>
+                          </div>
                         </div>
                       </Popup>
                     </Marker>
@@ -241,6 +296,8 @@ export function MapView({
           })}
         </MapContainer>
       </div>
+
+      <VideoModal place={videoModalPlace} onClose={() => setVideoModalPlace(null)} />
     </div>
   );
 }

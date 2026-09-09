@@ -1,16 +1,17 @@
 import { useMemo, useState } from 'react';
 import { MapPin, Sparkles } from 'lucide-react';
-import { places } from '@/data/sampleData';
+import { useAppData } from '@/context/AppDataContext';
 import { PlaceCard } from '@/components/cards/PlaceCard';
 import { FilterBar } from '@/components/ui/FilterBar';
 import { EmptyState } from '@/components/ui/States';
 
-const categories = ['Beach', 'Fort', 'Temple', 'Nature', 'Viewpoint', 'Waterfall', 'Heritage', 'Hidden Gem'];
-
 export function PlacesPage({ destinationId, initialQuery }: { destinationId: string; initialQuery?: string }) {
+  const { places, categories } = useAppData();
   const [search, setSearch] = useState(initialQuery ?? '');
   const [category, setCategory] = useState('All');
   const [hiddenOnly, setHiddenOnly] = useState(false);
+
+  const categoryNames = useMemo(() => categories.map((c) => c.name), [categories]);
 
   const filtered = useMemo(() => {
     let pool = places.filter((p) => p.destinationId === destinationId);
@@ -43,7 +44,7 @@ export function PlacesPage({ destinationId, initialQuery }: { destinationId: str
         search={search}
         onSearch={setSearch}
         searchPlaceholder="Search places…"
-        categories={categories}
+        categories={categoryNames}
         activeCategory={category}
         onCategory={setCategory}
       >

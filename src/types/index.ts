@@ -55,6 +55,12 @@ export interface Place {
   isHiddenGem: boolean;
   /** Seasons when this place is best / available. If undefined = year-round. */
   seasons?: ('monsoon' | 'winter' | 'summer' | 'year-round')[];
+  /** Direct MP4 or video preview URL */
+  videoUrl?: string;
+  /** Explanation of why this spot is special in its prime season */
+  seasonalHighlight?: string;
+  /** Explicit admin selection for "Must Experience" seasonal section */
+  featuredInSeasons?: ('monsoon' | 'winter' | 'summer')[];
   /** Set true if visiting requires a full day (e.g. Lingacha Dongar) */
   fullDayTrip?: boolean;
 }
@@ -169,6 +175,8 @@ export interface ItineraryItem {
   cost: number;
   reason: string;
   refId?: ID;
+  videoUrl?: string;
+  seasonalHighlight?: string;
 }
 
 export interface TripPreferences {

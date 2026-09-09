@@ -12,7 +12,9 @@ export type Route =
   | { name: 'planner'; destinationId: string }
   | { name: 'profile' }
   | { name: 'login' }
-  | { name: 'business-register' };
+  | { name: 'business-register' }
+  | { name: 'admin' }
+  | { name: 'customer-dashboard' };
 
 interface RouterContextValue {
   route: Route;
@@ -39,12 +41,14 @@ function parseHash(): Route {
     case 'profile': return { name: 'profile' };
     case 'login': return { name: 'login' };
     case 'business-register': return { name: 'business-register' };
+    case 'admin': return { name: 'admin' };
+    case 'customer-dashboard': return { name: 'customer-dashboard' };
     default: return { name: 'home' };
   }
 }
 
 function routeToHash(route: Route): string {
-  if (route.name === 'home' || route.name === 'profile' || route.name === 'login' || route.name === 'business-register') return `#/${route.name}`;
+  if (route.name === 'home' || route.name === 'profile' || route.name === 'login' || route.name === 'business-register' || route.name === 'admin' || route.name === 'customer-dashboard') return `#/${route.name}`;
   if (route.name === 'destination' || route.name === 'map' || route.name === 'planner') return `#/${route.name}/${route.destinationId}`;
   const q = route.q ? `/${encodeURIComponent(route.q)}` : '';
   return `#/${route.name}/${route.destinationId}${q}`;

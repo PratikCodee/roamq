@@ -17,7 +17,8 @@ export function PlaceCard({ place, index = 0 }: { place: Place; index?: number }
           src={place.image}
           alt={place.name}
           loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          decoding="async"
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-navy-900/60 via-transparent to-transparent" />
         <div className="absolute left-3 top-3 flex gap-2">

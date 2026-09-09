@@ -18,13 +18,22 @@
     background: transparent;
     @apply text-white font-sans;
     overscroll-behavior: none;
+    /* Smooth GPU-composited scrolling */
+    -webkit-overflow-scrolling: touch;
   }
   h1, h2, h3, h4, h5 {
     font-family: 'Lora', Georgia, Cambria, ui-serif, serif;
     @apply tracking-tight;
+    /* Prevent layout shift while font loads */
+    font-display: swap;
   }
   ::selection {
     @apply bg-ocean-400/30 text-white;
+  }
+  /* Lazy render off-screen sections for faster scroll */
+  section {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 500px;
   }
 }
 
@@ -48,7 +57,13 @@
     @apply btn bg-sand-500 text-white px-5 py-3 shadow-soft hover:bg-sand-600 active:scale-[0.98];
   }
   .card {
-    @apply rounded-3xl bg-white shadow-card border border-navy-100/70 overflow-hidden transition-all hover:translate-y-[-4px] hover:shadow-lift;
+    @apply rounded-3xl bg-white shadow-card border border-navy-100/70 overflow-hidden;
+    /* GPU-accelerate hover transform */
+    transition: transform 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 200ms ease;
+    will-change: transform;
+  }
+  .card:hover {
+    @apply translate-y-[-4px] shadow-lift;
   }
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold;
@@ -65,8 +80,9 @@
   .skeleton::after {
     @apply absolute inset-0 -translate-x-full;
     content: '';
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
-    animation: shimmer 1.5s infinite;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+    animation: shimmer 1.2s infinite;
+    will-change: transform;
   }
   .section-title {
     @apply text-2xl sm:text-3xl font-bold text-navy-900;
@@ -107,24 +123,35 @@
     @apply bg-gradient-to-br from-forest-900 via-ocean-800 to-navy-900;
   }
   .hero-parallax {
-    background-attachment: fixed;
     background-position: center;
     background-size: cover;
+    /* Use transform-based parallax — avoids paint on every scroll */
+    will-change: transform;
   }
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-ocean-300 to-forest-300;
   }
   .reveal {
     opacity: 0;
-    transform: translateY(30px);
-    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateY(20px);
+    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
   }
   .reveal.active {
     opacity: 1;
     transform: translateY(0);
   }
   .btn-nature {
-    @apply inline-flex items-center justify-center gap-2 rounded-full font-bold text-white px-6 py-3 transition-all duration-300 bg-gradient-to-r from-forest-600 to-ocean-600 hover:from-forest-500 hover:to-ocean-500 shadow-soft hover:shadow-lift hover:-translate-y-1 active:translate-y-0 active:scale-[0.98];
+    @apply inline-flex items-center justify-center gap-2 rounded-full font-bold text-white px-6 py-3 bg-gradient-to-r from-forest-600 to-ocean-600 shadow-soft;
+    transition: filter 200ms ease, transform 150ms ease, box-shadow 150ms ease;
+    will-change: transform;
+  }
+  .btn-nature:hover {
+    filter: brightness(1.1);
+    @apply shadow-lift -translate-y-1;
+  }
+  .btn-nature:active {
+    @apply translate-y-0 scale-[0.98];
   }
 }
 
@@ -137,6 +164,11 @@
 }
 ::-webkit-scrollbar-thumb {
   @apply bg-ocean-500/50 rounded-full hover:bg-ocean-600/80;
+}
+
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
 }
 
 @keyframes particle-float {

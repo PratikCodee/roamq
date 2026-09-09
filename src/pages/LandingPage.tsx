@@ -74,6 +74,8 @@ export function LandingPage() {
           src={ratnagiriBg}
           alt=""
           aria-hidden
+          fetchpriority="high"
+          decoding="sync"
           className="w-full h-full object-cover object-top"
           style={{ minHeight: '100vh' }}
         />

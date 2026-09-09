@@ -27,7 +27,8 @@ const SEASON_LABEL: Record<string, string> = {
 
 // ── Build a rich, grounded prompt ──────────────────────────────────────────────
 
-function buildPrompt(prefs: TripPreferences, season: string): string {
+function buildPrompt(prefs: TripPreferences, season: string, placesPool?: Place[]): string {
+  const sourcePlaces = placesPool && placesPool.length > 0 ? placesPool : places;
 
   // Season-filter places: prefer season-matched, still include year-round ones
   const isSeasonMatch = (p: { seasons?: string[] }) => {
@@ -36,7 +37,7 @@ function buildPrompt(prefs: TripPreferences, season: string): string {
     return p.seasons.includes(season);
   };
 
-  const allDestPlaces   = places.filter(p => p.destinationId === prefs.destinationId);
+  const allDestPlaces   = sourcePlaces.filter(p => !p.destinationId || p.destinationId === prefs.destinationId);
   // Season-matched places shown first (PREFERRED), off-season shown separately (AVOID)
   const seasonPlaces    = allDestPlaces.filter(isSeasonMatch);
   const offSeasonPlaces = allDestPlaces.filter(p => !isSeasonMatch(p));
@@ -234,6 +235,7 @@ export async function generateWithGemini(
   prefs: TripPreferences,
   onProgress?: ProgressCallback,
   resolvedSeason?: string,
+  placesPool?: Place[],
 ): Promise<{ result: ItineraryResult; usedAI: boolean }> {
   const season = resolvedSeason ?? getCurrentSeason();
   const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
@@ -242,7 +244,7 @@ export async function generateWithGemini(
   if (!apiKey || apiKey.startsWith('your_') || apiKey === 'placeholder') {
     onProgress?.('Using smart local planner…');
     await new Promise(r => setTimeout(r, 800));
-    return { result: generateItinerary(prefs, season), usedAI: false };
+    return { result: generateItinerary(prefs, season, placesPool), usedAI: false };
   }
 
   // ── Gemini path ────────────────────────────────────────────────────────────
@@ -273,7 +275,7 @@ export async function generateWithGemini(
       },
     });
 
-    const prompt = buildPrompt(prefs, season);
+    const prompt = buildPrompt(prefs, season, placesPool);
     const response: GenerateContentResult = await model.generateContent(prompt);
     clearInterval(progressInterval);
 

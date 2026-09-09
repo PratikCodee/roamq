@@ -2,14 +2,16 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Sparkles, Calendar, Users, Compass, UtensilsCrossed, Bed, Clock, MapPin,
   CheckCircle2, Route, Wallet, TrendingUp, Bookmark, Trash2, Loader2,
-  AlertTriangle, Info, Bot, Zap, WifiOff, CloudRain, Sun, Flower2,
+  AlertTriangle, Info, Bot, Zap, WifiOff, CloudRain, Sun, Flower2, Video,
 } from 'lucide-react';
 import { useRouter } from '@/router/Router';
 import { interestOptions, transportOptions, foodOptions, stayOptions, ratnagiriDestination } from '@/data/sampleData';
 import { type ItineraryResult, getCurrentSeason } from '@/lib/itineraryEngine';
 import { generateWithGemini } from '@/lib/geminiItinerary';
 import { useSavedTrips } from '@/hooks/useSaved';
-import type { TripPreferences } from '@/types';
+import { useAppData } from '@/context/AppDataContext';
+import { VideoModal } from '@/components/ui/VideoModal';
+import type { TripPreferences, Place } from '@/types';
 
 type SeasonChoice = 'auto' | 'monsoon' | 'winter' | 'summer';
 
@@ -96,6 +98,7 @@ const itemColor: Record<string, string> = {
 export function PlannerPage({ destinationId }: { destinationId: string }) {
   const { navigate } = useRouter();
   const { saveTrip, trips, deleteTrip } = useSavedTrips();
+  const { places } = useAppData();
 
   const [days, setDays] = useState(3);
   const [travelers, setTravelers] = useState(3);
@@ -116,6 +119,7 @@ export function PlannerPage({ destinationId }: { destinationId: string }) {
   const [usedAI, setUsedAI]           = useState<boolean | null>(null);
   const [result, setResult]           = useState<ItineraryResult | null>(null);
   const [savedId, setSavedId]         = useState<string | null>(null);
+  const [videoModalPlace, setVideoModalPlace] = useState<Place | null>(null);
 
   const toggle = (arr: string[], set: (v: string[]) => void, val: string) =>
     set(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
@@ -135,7 +139,7 @@ export function PlannerPage({ destinationId }: { destinationId: string }) {
       travelerType, timeAvailableHours, distanceFromHotelKm, accessibilityNeeds,
     };
 
-    const { result: res, usedAI: ai } = await generateWithGemini(prefs, setAiStatus, resolvedSeason);
+    const { result: res, usedAI: ai } = await generateWithGemini(prefs, setAiStatus, resolvedSeason, places);
     setResult(res);
     setUsedAI(ai);
     setGenerating(false);
@@ -499,6 +503,31 @@ export function PlannerPage({ destinationId }: { destinationId: string }) {
                             <p className="mt-2 rounded-xl bg-navy-50 px-3 py-2 text-xs leading-relaxed text-navy-600">
                               <span className="font-semibold text-navy-700">Why: </span>{item.reason}
                             </p>
+
+                            {/* Video Preview Trigger */}
+                            {item.videoUrl && (
+                              <button
+                                onClick={() => {
+                                  const matchingPlace = places.find((p) => p.id === item.refId) ?? {
+                                    id: item.refId ?? 'tmp',
+                                    destinationId,
+                                    name: item.title,
+                                    category: item.subtitle as any,
+                                    description: item.reason,
+                                    image: 'https://images.pexels.com/photos/3974375/pexels-photo-3974375.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
+                                    videoUrl: item.videoUrl,
+                                    seasonalHighlight: item.seasonalHighlight,
+                                    location: 'Ratnagiri',
+                                    lat: 17.0, lng: 73.3,
+                                    openingTime: '6:00 AM', closingTime: '6:00 PM', entryFee: 'Free', bestTimeToVisit: 'Monsoon', visitDuration: item.duration, rating: 4.8, reviewsCount: 100, isHiddenGem: false
+                                  };
+                                  setVideoModalPlace(matchingPlace);
+                                }}
+                                className="mt-2 text-xs font-bold text-ocean-700 bg-ocean-50 border border-ocean-200 px-3 py-1.5 rounded-xl hover:bg-ocean-100 transition flex items-center gap-1.5 w-fit"
+                              >
+                                <Video size={13} className="text-sand-500" /> Watch Spot Video 🎥
+                              </button>
+                            )}
                           </div>
                         </div>
                       );
@@ -538,6 +567,8 @@ export function PlannerPage({ destinationId }: { destinationId: string }) {
           )}
         </div>
       </div>
+
+      <VideoModal place={videoModalPlace} onClose={() => setVideoModalPlace(null)} />
     </div>
   );
 }

@@ -34,6 +34,46 @@ export const destinations: Destination[] = [ratnagiriDestination];
 
 export const places: Place[] = [
   {
+    id: 'place-ukshi-waterfall',
+    destinationId: 'dest-ratnagiri',
+    name: 'Ukshi Waterfall',
+    category: 'Waterfall',
+    description:
+      'A roaring multi-tiered waterfall near Ukshi railway station that plunges into a deep natural pool amidst lush Sahyadri rain forests during monsoon.',
+    image: 'https://images.pexels.com/photos/3974375/pexels-photo-3974375.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-waterfall-in-forest-2213-large.mp4',
+    seasonalHighlight: '🌧️ Full-flow 100ft cascading waterfall surrounded by misty jungle trails and natural swimming pools during monsoon.',
+    location: 'Ukshi, 22 km from Ratnagiri',
+    lat: 17.0850, lng: 73.4120,
+    openingTime: '6:00 AM', closingTime: '6:00 PM',
+    entryFee: 'Free',
+    bestTimeToVisit: 'July–October',
+    visitDuration: '2–3 hours',
+    rating: 4.8, reviewsCount: 310, isHiddenGem: true,
+    seasons: ['monsoon'],
+    featuredInSeasons: ['monsoon'],
+  },
+  {
+    id: 'place-panval-waterfall',
+    destinationId: 'dest-ratnagiri',
+    name: 'Panval Point & Waterfall',
+    category: 'Waterfall',
+    description:
+      'A hidden waterfall near Ratnagiri town that comes alive with thunderous volume during July–September, surrounded by emerald green mango groves and cliff views.',
+    image: 'https://images.pexels.com/photos/3760067/pexels-photo-3760067.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-waterfall-in-forest-2213-large.mp4',
+    seasonalHighlight: '🌧️ A breathtaking monsoon cascade with fresh mountain water streams and scenic valley viewpoints.',
+    location: 'Panval, 12 km from Ratnagiri city',
+    lat: 17.0210, lng: 73.3410,
+    openingTime: '7:00 AM', closingTime: '6:00 PM',
+    entryFee: 'Free',
+    bestTimeToVisit: 'July–September',
+    visitDuration: '2 hours',
+    rating: 4.7, reviewsCount: 195, isHiddenGem: true,
+    seasons: ['monsoon'],
+    featuredInSeasons: ['monsoon'],
+  },
+  {
     id: 'place-ganpatipule-beach',
     destinationId: 'dest-ratnagiri',
     name: 'Ganpatipule Beach',
@@ -41,6 +81,8 @@ export const places: Place[] = [
     description:
       'A long stretch of silvery-white sand beside the 400-year-old Swayambhu Ganesh temple. Calm waters, clean shoreline, and one of the few beaches in Maharashtra where the temple sits right on the sand.',
     image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Ganapathy_Phule%2C_Maharastra%2C_India_(4044184753).jpg?width=960',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-a-beach-and-the-ocean-41014-large.mp4',
+    seasonalHighlight: '☀️ Clear blue skies, golden sands, and calm coastal waves perfect for water sports and seaside sunsets.',
     location: 'Ganpatipule, 25 km from Ratnagiri city',
     lat: 17.1469, lng: 73.2653,
     openingTime: '6:00 AM', closingTime: '7:00 PM',
@@ -48,6 +90,8 @@ export const places: Place[] = [
     bestTimeToVisit: 'November–February',
     visitDuration: '2–3 hours',
     rating: 4.6, reviewsCount: 1280, isHiddenGem: false,
+    seasons: ['winter', 'summer'],
+    featuredInSeasons: ['winter'],
   },
   {
     id: 'place-ratnadurg-fort',
@@ -57,6 +101,8 @@ export const places: Place[] = [
     description:
       'A massive sea fort spread across 120 acres on a hilltop overlooking the Arabian Sea. Built by the Bahamani Sultans and later captured by Shivaji Maharaj, it houses the Bhagwati temple and offers panoramic ocean views from its ramparts.',
     image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Ratndurg_Fort.jpg?width=960',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-drone-shot-of-the-sea-coast-41539-large.mp4',
+    seasonalHighlight: '🌧️ Waves crash dramatically against 120-acre sea fort walls while green moss blankets the historic bastions.',
     location: 'Ratnagiri city',
     lat: 16.9945, lng: 73.2998,
     openingTime: '6:00 AM', closingTime: '6:30 PM',
@@ -64,6 +110,8 @@ export const places: Place[] = [
     bestTimeToVisit: 'October–March',
     visitDuration: '2 hours',
     rating: 4.5, reviewsCount: 940, isHiddenGem: false,
+    seasons: ['monsoon', 'winter', 'year-round'],
+    featuredInSeasons: ['monsoon'],
   },
   {
     id: 'place-jaigad-fort',
@@ -73,6 +121,8 @@ export const places: Place[] = [
     description:
       'A 16th-century coastal fort at the entrance of the Sangameshwar river creek, built to guard the port of Dabhol. Offers sweeping views of the lighthouse, the creek, and the open sea from its stone bastions.',
     image: 'https://images.pexels.com/photos/32498310/pexels-photo-32498310.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-drone-shot-of-the-sea-coast-41539-large.mp4',
+    seasonalHighlight: '☀️ Sweeping 360-degree ocean view and maritime breeze along ancient stone bastions.',
     location: 'Jaigad, 20 km from Ganpatipule',
     lat: 17.3011, lng: 73.2213,
     openingTime: '9:00 AM', closingTime: '6:00 PM',
@@ -80,6 +130,8 @@ export const places: Place[] = [
     bestTimeToVisit: 'November–February',
     visitDuration: '1.5 hours',
     rating: 4.4, reviewsCount: 510, isHiddenGem: false,
+    seasons: ['winter', 'summer'],
+    featuredInSeasons: ['summer'],
   },
   {
     id: 'place-jaigad-lighthouse',
@@ -89,6 +141,8 @@ export const places: Place[] = [
     description:
       'A working lighthouse near Jaigad fort, open to visitors. Climb the spiral staircase for a stunning 360° view of the creek, the fort, and the endless Arabian Sea — especially magical at sunset.',
     image: 'https://images.pexels.com/photos/15794808/pexels-photo-15794808.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-waves-in-the-water-1164-large.mp4',
+    seasonalHighlight: '☀️ Spectacular golden hour sunsets over the Arabian Sea lighthouse horizon.',
     location: 'Jaigad, near Ganpatipule',
     lat: 17.3015, lng: 73.2208,
     openingTime: '10:00 AM', closingTime: '5:30 PM',
@@ -96,6 +150,8 @@ export const places: Place[] = [
     bestTimeToVisit: 'October–February',
     visitDuration: '45 min',
     rating: 4.5, reviewsCount: 320, isHiddenGem: false,
+    seasons: ['winter', 'summer'],
+    featuredInSeasons: ['winter'],
   },
   {
     id: 'place-thibaw-point',
@@ -105,6 +161,8 @@ export const places: Place[] = [
     description:
       'The exile home of Burma\'s last king Thibaw Min, who was held here by the British from 1885. The colonial-era palace overlooks the river and sea — a quiet, melancholic spot with a fascinating history.',
     image: 'https://images.pexels.com/photos/32498302/pexels-photo-32498302.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-drone-shot-of-the-sea-coast-41539-large.mp4',
+    seasonalHighlight: '☀️ Colonial heritage architecture surrounded by blooming gardens and valley views.',
     location: 'Thibaw Point, Ratnagiri city',
     lat: 16.9810, lng: 73.3050,
     openingTime: '9:00 AM', closingTime: '6:00 PM',
@@ -112,6 +170,8 @@ export const places: Place[] = [
     bestTimeToVisit: 'October–March',
     visitDuration: '1 hour',
     rating: 4.1, reviewsCount: 280, isHiddenGem: false,
+    seasons: ['winter', 'year-round'],
+    featuredInSeasons: ['summer'],
   },
   {
     id: 'place-ganpatipule-temple',
@@ -121,6 +181,8 @@ export const places: Place[] = [
     description:
       'A 400-year-old self-originated (Swayambhu) Ganesh temple on the beach. The idol faces west — unusual for Ganesh temples — and the temple is one of the most revered pilgrimage sites on the Konkan coast.',
     image: 'https://images.pexels.com/photos/32388346/pexels-photo-32388346.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-waves-in-the-water-1164-large.mp4',
+    seasonalHighlight: '✨ Sacred seaside temple vibes with peaceful morning sea breeze and evening aarti.',
     location: 'Ganpatipule',
     lat: 17.1475, lng: 73.2660,
     openingTime: '5:00 AM', closingTime: '9:00 PM',
@@ -128,6 +190,7 @@ export const places: Place[] = [
     bestTimeToVisit: 'Year-round',
     visitDuration: '1 hour',
     rating: 4.8, reviewsCount: 2100, isHiddenGem: false,
+    seasons: ['year-round'],
   },
   {
     id: 'place-are-ware-beach',
@@ -137,6 +200,8 @@ export const places: Place[] = [
     description:
       'A secluded black-sand cove reachable only by a narrow winding road through cashew plantations. Almost no crowds, dramatic cliffs, and a perfect spot for a private sunset picnic. Locals call it the "secret beach of Ratnagiri".',
     image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Aare_Vaare_beach.jpg?width=960',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-waves-in-the-water-1164-large.mp4',
+    seasonalHighlight: '☀️ Secret black sand cove surrounded by emerald cashew hills and quiet ocean tides.',
     location: 'Are Ware, 35 km from Ratnagiri',
     lat: 17.2100, lng: 73.1800,
     openingTime: 'Open all day', closingTime: 'Open all day',
@@ -144,6 +209,8 @@ export const places: Place[] = [
     bestTimeToVisit: 'November–February',
     visitDuration: '2–3 hours',
     rating: 4.7, reviewsCount: 95, isHiddenGem: true,
+    seasons: ['winter', 'summer'],
+    featuredInSeasons: ['winter'],
   },
   {
     id: 'place-marleshwar-temple',
@@ -153,6 +220,8 @@ export const places: Place[] = [
     description:
       'A cave temple dedicated to Shiva hidden inside a dense forest, with a waterfall cascading right beside it during monsoon. The trek through the jungle and the sight of snakes coexisting peacefully near the shrine make it unforgettable.',
     image: 'https://images.pexels.com/photos/3974375/pexels-photo-3974375.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-waterfall-in-forest-2213-large.mp4',
+    seasonalHighlight: '🌧️ Sacred cave temple surrounded by a roaring 120ft monsoon waterfall and misty jungle pathways.',
     location: 'Marleshwar, Sangmeshwar taluka',
     lat: 17.0500, lng: 73.4500,
     openingTime: '6:00 AM', closingTime: '6:00 PM',
@@ -160,6 +229,7 @@ export const places: Place[] = [
     bestTimeToVisit: 'August–February',
     visitDuration: '3–4 hours (incl. trek)',
     rating: 4.6, reviewsCount: 140, isHiddenGem: true,
+    seasons: ['monsoon', 'winter'],
   },
   {
     id: 'place-pawas',

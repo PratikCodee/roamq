@@ -6,6 +6,10 @@ import {
 } from 'lucide-react';
 import { useRouter } from '@/router/Router';
 import { ratnagiriDestination } from '@/data/sampleData';
+import { useAuth } from '@/context/AuthContext';
+import { useAppData } from '@/context/AppDataContext';
+import { emailExists, generateId } from '@/store/db';
+import type { AppUser } from '@/store/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Role = 'customer' | 'business' | 'admin';
@@ -123,66 +127,100 @@ function RememberForgot({
 
 // ─── Customer Form ────────────────────────────────────────────────────────────
 function CustomerForm({ onSuccess }: { onSuccess: () => void }) {
-  const [email, setEmail] = useState('');
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [name, setName]       = useState('');
+  const [email, setEmail]     = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState('');
+  const [pendingMsg, setPendingMsg] = useState('');
+
+  const { login } = useAuth();
+  const { addUser } = useAppData();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    if (!email.trim()) { setError('Please enter your email or mobile number.'); return; }
-    if (!password)      { setError('Please enter your password.'); return; }
+    setError(''); setPendingMsg('');
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^[6-9]\d{9}$/;
+
+    if (mode === 'register') {
+      if (!name.trim())   { setError('Please enter your name.'); return; }
+      if (!email.trim() || (!emailRegex.test(email) && !phoneRegex.test(email.replace(/\s/g, '')))) {
+        setError('Enter a valid email or 10-digit mobile.'); return;
+      }
+      if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+      if (emailExists(email)) { setError('An account with this email already exists.'); return; }
+      setLoading(true);
+      await new Promise((r) => setTimeout(r, 800));
+      addUser({ name: name.trim(), email: email.trim(), password, role: 'customer', status: 'approved' });
+      setLoading(false);
+      const res = login(email.trim(), password);
+      if (res.ok) { onSuccess(); return; }
+      return;
+    }
+
+    // Login
+    if (!email.trim()) { setError('Please enter your email or mobile number.'); return; }
+    if (!password)     { setError('Please enter your password.'); return; }
     if (!emailRegex.test(email) && !phoneRegex.test(email.replace(/\s/g, ''))) {
       setError('Enter a valid email address or 10-digit mobile number.');
       return;
     }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise((r) => setTimeout(r, 800));
     setLoading(false);
-    // Simulate wrong credentials for demo
-    if (password !== 'demo1234') {
-      setError('Invalid credentials. Try password: demo1234');
-      return;
-    }
-    onSuccess();
+    const result = login(email, password);
+    if (result.ok) { onSuccess(); return; }
+    if (result.reason === 'pending')       setPendingMsg('Your account is waiting for admin approval.');
+    else if (result.reason === 'rejected') setError('Your registration was rejected by the admin.');
+    else                                   setError('Invalid email or password.');
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 animate-fade-in" noValidate>
       <div>
-        <p className="section-eyebrow mb-1">Customer Login</p>
-        <h2 className="text-xl font-bold text-navy-900">Continue your Ratnagiri journey.</h2>
+        <p className="section-eyebrow mb-1">Customer {mode === 'login' ? 'Login' : 'Register'}</p>
+        <h2 className="text-xl font-bold text-navy-900">
+          {mode === 'login' ? 'Continue your Ratnagiri journey.' : 'Create your account.'}
+        </h2>
       </div>
 
+      {pendingMsg && (
+        <div className="flex items-center gap-2 rounded-2xl bg-warning-50 border border-warning-200 px-3 py-2.5 text-sm text-warning-800 animate-fade-in">
+          <AlertCircle size={15} className="shrink-0" />{pendingMsg}
+        </div>
+      )}
       {error && <InlineError msg={error} />}
+
+      {mode === 'register' && (
+        <div>
+          <label htmlFor="cust-name" className="label">Full Name</label>
+          <div className="relative">
+            <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-navy-400" />
+            <input id="cust-name" type="text" value={name} onChange={(e) => setName(e.target.value)}
+              placeholder="Your full name" className="input pl-10" autoComplete="name" />
+          </div>
+        </div>
+      )}
 
       <div>
         <label htmlFor="cust-email" className="label">Email / Mobile Number</label>
         <div className="relative">
           <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-navy-400" />
-          <input
-            id="cust-email"
-            type="text"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@email.com or 9876543210"
-            className="input pl-10"
-            autoComplete="email"
-          />
+          <input id="cust-email" type="text" value={email} onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@email.com or 9876543210" className="input pl-10" autoComplete="email" />
         </div>
       </div>
 
       <PasswordInput id="cust-password" label="Password" value={password} onChange={setPassword} />
 
-      <RememberForgot remember={remember} onRemember={setRemember} />
+      {mode === 'login' && <RememberForgot remember={remember} onRemember={setRemember} />}
 
       <button type="submit" disabled={loading} className="btn-primary w-full text-base py-3">
         {loading ? <Spinner /> : null}
-        {loading ? 'Logging in…' : 'Login'}
+        {loading ? 'Please wait…' : mode === 'login' ? 'Login' : 'Create Account'}
       </button>
 
       <div className="relative flex items-center gap-3">
@@ -191,19 +229,24 @@ function CustomerForm({ onSuccess }: { onSuccess: () => void }) {
         <div className="h-px flex-1 bg-navy-100" />
       </div>
 
-      <button
-        type="button"
-        className="btn-secondary w-full text-sm gap-3 py-3"
-      >
-        <GoogleIcon /> Continue with Google
-      </button>
-
-      <p className="text-center text-sm text-navy-500">
-        Don't have an account?{' '}
-        <button type="button" className="font-semibold text-ocean-600 hover:text-ocean-800 transition">
-          Sign Up
-        </button>
-      </p>
+      {mode === 'login' ? (
+        <>
+          <button type="button" className="btn-secondary w-full text-sm gap-3 py-3">
+            <GoogleIcon /> Continue with Google
+          </button>
+          <p className="text-center text-sm text-navy-500">
+            Don&apos;t have an account?{' '}
+            <button type="button" onClick={() => { setMode('register'); setError(''); setPendingMsg(''); }}
+              className="font-semibold text-ocean-600 hover:text-ocean-800 transition">Sign Up</button>
+          </p>
+        </>
+      ) : (
+        <p className="text-center text-sm text-navy-500">
+          Already have an account?{' '}
+          <button type="button" onClick={() => { setMode('login'); setError(''); setPendingMsg(''); }}
+            className="font-semibold text-ocean-600 hover:text-ocean-800 transition">Login</button>
+        </p>
+      )}
     </form>
   );
 }
@@ -212,25 +255,29 @@ function CustomerForm({ onSuccess }: { onSuccess: () => void }) {
 function BusinessForm({
   onSuccess, onRegister,
 }: { onSuccess: () => void; onRegister: () => void }) {
-  const [email, setEmail] = useState('');
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState('');
+  const [pendingMsg, setPendingMsg] = useState('');
+
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError(''); setPendingMsg('');
     if (!email.trim()) { setError('Please enter your business email or mobile number.'); return; }
-    if (!password)      { setError('Please enter your password.'); return; }
+    if (!password)     { setError('Please enter your password.'); return; }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise((r) => setTimeout(r, 800));
     setLoading(false);
-    if (password !== 'biz1234') {
-      setError('Invalid credentials. Try password: biz1234');
-      return;
-    }
-    onSuccess();
+    const result = login(email, password);
+    if (result.ok) { onSuccess(); return; }
+    if (result.reason === 'pending')       setPendingMsg('Your business registration is awaiting admin approval.');
+    else if (result.reason === 'rejected') setError('Your business registration was rejected by the admin.');
+    else if (result.reason === 'not_found') setError('No business account found. Please register first.');
+    else                                   setError('Invalid email or password.');
   };
 
   return (
@@ -240,6 +287,11 @@ function BusinessForm({
         <h2 className="text-xl font-bold text-navy-900">Manage your business on Ratnagiri Travel.</h2>
       </div>
 
+      {pendingMsg && (
+        <div className="flex items-center gap-2 rounded-2xl bg-warning-50 border border-warning-200 px-3 py-2.5 text-sm text-warning-800 animate-fade-in">
+          <AlertCircle size={15} className="shrink-0" />{pendingMsg}
+        </div>
+      )}
       {error && <InlineError msg={error} />}
 
       <div>
@@ -301,22 +353,22 @@ function AdminForm({ onSuccess }: { onSuccess: () => void }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState('');
+
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!username.trim()) { setError('Please enter your admin email or username.'); return; }
-    if (!password)         { setError('Please enter your password.'); return; }
+    if (!password)        { setError('Please enter your password.'); return; }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1800));
+    await new Promise((r) => setTimeout(r, 800));
     setLoading(false);
-    if (password !== 'admin1234') {
-      setError('Unauthorized. Check credentials and try again.');
-      return;
-    }
-    onSuccess();
+    const result = login(username, password);
+    if (result.ok) { onSuccess(); return; }
+    setError('Unauthorized. Check credentials and try again.');
   };
 
   return (
@@ -398,6 +450,7 @@ function SuccessScreen({ role, onContinue }: { role: Role; onContinue: () => voi
 // ─── Main Login Page ──────────────────────────────────────────────────────────
 export function LoginPage() {
   const { navigate } = useRouter();
+  const { session } = useAuth();
   const [selectedRole, setSelectedRole] = useState<Role>('customer');
   const [loginSuccess, setLoginSuccess] = useState(false);
   // key forces form re-mount (clears state) when switching role
@@ -413,7 +466,9 @@ export function LoginPage() {
   const handleSuccess = () => setLoginSuccess(true);
 
   const handleContinue = () => {
-    navigate({ name: 'home' });
+    if (session?.role === 'admin') navigate({ name: 'admin' });
+    else if (session?.role === 'customer') navigate({ name: 'customer-dashboard' });
+    else navigate({ name: 'home' }); // For businesses, just go home for now
   };
 
   const goHome = () => navigate({ name: 'home' });

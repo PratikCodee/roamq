@@ -72,14 +72,15 @@ const DAY_THEMES = [
 
 // ── Candidate matching (preference-aware) ──────────────────────────────────────
 
-function matchPlaces(prefs: TripPreferences, seasonOverride?: string): Place[] {
+function matchPlaces(prefs: TripPreferences, seasonOverride?: string, placesPool?: Place[]): Place[] {
+  const sourcePlaces = placesPool && placesPool.length > 0 ? placesPool : places;
   const wanted = new Set<string>();
   prefs.interests.forEach((i) => {
     (interestToCategory[i] ?? []).forEach((c) => wanted.add(c));
   });
 
   const season = (seasonOverride ?? getCurrentSeason()) as Season;
-  let pool = places.filter((p) => p.destinationId === prefs.destinationId);
+  let pool = sourcePlaces.filter((p) => !p.destinationId || p.destinationId === prefs.destinationId);
 
   // Filter by interest categories if specified
   if (wanted.size > 0) {
@@ -88,8 +89,8 @@ function matchPlaces(prefs: TripPreferences, seasonOverride?: string): Place[] {
 
   // Always ensure at least 3 places
   if (pool.length < 3) {
-    const extras = places
-      .filter((p) => p.destinationId === prefs.destinationId && !pool.includes(p))
+    const extras = sourcePlaces
+      .filter((p) => (!p.destinationId || p.destinationId === prefs.destinationId) && !pool.includes(p))
       .sort((a, b) => b.rating - a.rating)
       .slice(0, 3);
     pool = [...pool, ...extras];
@@ -349,6 +350,8 @@ function buildDayPlan(ctx: BuildContext): DayPlan {
         duration: '1 hour', cost,
         reason: `A peaceful early morning start — ${reasonForPlace(earlySpot, prefs)}`,
         refId: earlySpot.id,
+        videoUrl: earlySpot.videoUrl,
+        seasonalHighlight: earlySpot.seasonalHighlight,
       });
       dayCost += cost;
       remainingBudget -= cost;
@@ -372,6 +375,8 @@ function buildDayPlan(ctx: BuildContext): DayPlan {
       duration: morningPlace.visitDuration, cost,
       reason: reasonForPlace(morningPlace, prefs),
       refId: morningPlace.id,
+      videoUrl: morningPlace.videoUrl,
+      seasonalHighlight: morningPlace.seasonalHighlight,
     });
     dayCost += cost;
     remainingBudget -= cost;
@@ -428,6 +433,8 @@ function buildDayPlan(ctx: BuildContext): DayPlan {
           duration: secondPlace.visitDuration, cost,
           reason: reasonForPlace(secondPlace, prefs),
           refId: secondPlace.id,
+          videoUrl: secondPlace.videoUrl,
+          seasonalHighlight: secondPlace.seasonalHighlight,
         });
         dayCost += cost;
         remainingBudget -= cost;
@@ -452,6 +459,8 @@ function buildDayPlan(ctx: BuildContext): DayPlan {
         duration: secondPlace.visitDuration, cost,
         reason: reasonForPlace(secondPlace, prefs),
         refId: secondPlace.id,
+        videoUrl: secondPlace.videoUrl,
+        seasonalHighlight: secondPlace.seasonalHighlight,
       });
       dayCost += cost;
       remainingBudget -= cost;
@@ -499,6 +508,8 @@ function buildDayPlan(ctx: BuildContext): DayPlan {
       duration: afternoonPlace.visitDuration, cost,
       reason: reasonForPlace(afternoonPlace, prefs),
       refId: afternoonPlace.id,
+      videoUrl: afternoonPlace.videoUrl,
+      seasonalHighlight: afternoonPlace.seasonalHighlight,
     });
     dayCost += cost;
     remainingBudget -= cost;
@@ -546,6 +557,8 @@ function buildDayPlan(ctx: BuildContext): DayPlan {
           duration: '1 hour', cost,
           reason: `A beautiful spot to wind down the day — ${reasonForPlace(sunsetPlace, prefs)}`,
           refId: sunsetPlace.id,
+          videoUrl: sunsetPlace.videoUrl,
+          seasonalHighlight: sunsetPlace.seasonalHighlight,
         });
         dayCost += cost;
         remainingBudget -= cost;
@@ -599,9 +612,9 @@ function buildDayPlan(ctx: BuildContext): DayPlan {
 
 // ── Main entry point ───────────────────────────────────────────────────────────
 
-export function generateItinerary(prefs: TripPreferences, seasonOverride?: string): ItineraryResult {
+export function generateItinerary(prefs: TripPreferences, seasonOverride?: string, placesPool?: Place[]): ItineraryResult {
   const travelers = Math.max(1, prefs.travelers);
-  const matchedPlaces = matchPlaces(prefs, seasonOverride);
+  const matchedPlaces = matchPlaces(prefs, seasonOverride, placesPool);
   const matchedRestos = matchRestaurants(prefs);
   const matchedProviders = matchProviders(prefs);
   const matchedActivities = matchActivities(prefs);

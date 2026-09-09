@@ -1,34 +1,112 @@
+import { useState } from 'react';
 import {
-  MapPin, Sparkles, ArrowRight, Calendar, Star, Quote, ChevronRight,
+  MapPin, Sparkles, ArrowRight, Calendar, Star, Quote, ChevronRight, CloudRain, Sun, Flame, Plus, Pencil, Trash2,
 } from 'lucide-react';
 import { useRouter } from '@/router/Router';
-import { destinations, ratnagiriDestination, places, hotels, restaurants, activities, providers, reviews } from '@/data/sampleData';
+import { destinations, ratnagiriDestination, hotels, restaurants, activities, providers, reviews } from '@/data/sampleData';
 import { PlaceCard } from '@/components/cards/PlaceCard';
+import { SeasonalPlaceCard } from '@/components/cards/SeasonalPlaceCard';
+import { VideoModal } from '@/components/ui/VideoModal';
 import { HotelCard } from '@/components/cards/HotelCard';
 import { RestaurantCard } from '@/components/cards/RestaurantCard';
 import { ActivityCard } from '@/components/cards/ActivityCard';
 import { ProviderCard } from '@/components/cards/ProviderCard';
 import { SectionHeading } from '@/components/ui/States';
 import { MapView } from '@/components/map/MapView';
+import { getCurrentSeason } from '@/lib/itineraryEngine';
+import { useAppData } from '@/context/AppDataContext';
+import { useAuth } from '@/context/AuthContext';
+import { PlaceEditor } from '@/components/admin/PlaceEditor';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { showToast } from '@/components/ui/Toast';
+import type { AppPlace } from '@/store/types';
+import type { Place } from '@/types';
+
+type SeasonType = 'monsoon' | 'winter' | 'summer';
+
+const SEASON_TABS: { id: SeasonType; label: string; emoji: string; desc: string; color: string }[] = [
+  { id: 'monsoon', label: 'Monsoon', emoji: '🌧️', desc: 'Roaring Waterfalls & Misty Sahyadris', color: 'bg-blue-600 text-white' },
+  { id: 'winter',  label: 'Winter',  emoji: '☀️', desc: 'Golden Beaches & Sunsets', color: 'bg-amber-600 text-white' },
+  { id: 'summer',  label: 'Summer',  emoji: '🥭', desc: 'Alphonso Orchards & Coastal Breeze', color: 'bg-orange-600 text-white' },
+];
 
 export function DestinationPage({ destinationId }: { destinationId: string }) {
   const { navigate } = useRouter();
-  const dest = destinations.find((destination) => destination.id === destinationId) ?? ratnagiriDestination;
-  const destPlaces = places.filter((p) => p.destinationId === destinationId);
-  const featured = destPlaces.filter((p) => !p.isHiddenGem).slice(0, 3);
-  const hidden = destPlaces.filter((p) => p.isHiddenGem).slice(0, 2);
+  const { places, editPlace, removePlace } = useAppData();
+  const { isAdmin } = useAuth();
+
+  const [activeSeason, setActiveSeason] = useState<SeasonType>(() => {
+    const s = getCurrentSeason();
+    return s === 'year-round' ? 'monsoon' : (s as SeasonType);
+  });
+  const [videoModalPlace, setVideoModalPlace] = useState<Place | null>(null);
+  const [editingPlace, setEditingPlace] = useState<AppPlace | null | 'new'>(null);
+  const [deletingPlaceId, setDeletingPlaceId] = useState<string | null>(null);
+
+  const targetDestId = destinationId || 'dest-ratnagiri';
+  const dest = destinations.find((destination) => destination.id === targetDestId) ?? ratnagiriDestination;
+  const destPlaces = places.filter((p) => p.destinationId === targetDestId);
+  const allAvailablePlaces = destPlaces.length > 0 ? destPlaces : places;
+  
+  const featured = allAvailablePlaces.filter((p) => !p.isHiddenGem).slice(0, 3);
+  const hidden = allAvailablePlaces.filter((p) => p.isHiddenGem).slice(0, 2);
+
+  // Filter seasonal places safely - prioritize places explicitly marked for featuredInSeasons by Admin
+  const featuredForSeason = allAvailablePlaces.filter(
+    (p) => p.featuredInSeasons && Array.isArray(p.featuredInSeasons) && p.featuredInSeasons.includes(activeSeason)
+  );
+
+  // Secondary seasonal places (matching activeSeason in seasons, excluding places explicitly featured for OTHER seasons)
+  const secondarySeasonal = allAvailablePlaces.filter((p) => {
+    if (featuredForSeason.some((fp) => fp.id === p.id)) return false;
+
+    // If admin explicitly set featuredInSeasons for this place, and activeSeason is NOT in it, skip it
+    if (p.featuredInSeasons && Array.isArray(p.featuredInSeasons) && p.featuredInSeasons.length > 0) {
+      if (!p.featuredInSeasons.includes(activeSeason)) return false;
+    }
+
+    if (!p.seasons || !Array.isArray(p.seasons) || p.seasons.length === 0) return true;
+    return p.seasons.includes(activeSeason);
+  });
+
+  // Remaining places pool (only if fewer than 3 items available)
+  const remainingPlaces = allAvailablePlaces.filter((p) => {
+    if (featuredForSeason.some((fp) => fp.id === p.id)) return false;
+    if (secondarySeasonal.some((sp) => sp.id === p.id)) return false;
+    if (p.featuredInSeasons && Array.isArray(p.featuredInSeasons) && p.featuredInSeasons.length > 0) {
+      if (!p.featuredInSeasons.includes(activeSeason)) return false;
+    }
+    return true;
+  });
+
+  // Combine: Admin selections FIRST, followed by general seasonal places, then fallbacks
+  const combinedSeasonal = [...featuredForSeason, ...secondarySeasonal, ...remainingPlaces];
+
+  // If admin selected 4+ featured places, show all featured (up to 6), otherwise fill at least 3 cards
+  const targetCount = Math.max(3, featuredForSeason.length);
+  const seasonalPlaces = combinedSeasonal.slice(0, Math.min(targetCount, 6));
+
+  const activeTabMeta = SEASON_TABS.find((t) => t.id === activeSeason) ?? SEASON_TABS[0];
   const destHotels = hotels.filter((h) => h.destinationId === destinationId).slice(0, 3);
   const destRestos = restaurants.filter((r) => r.destinationId === destinationId).slice(0, 3);
   const destActivities = activities.filter((a) => a.destinationId === destinationId).slice(0, 4);
   const destProviders = providers.filter((p) => p.destinationId === destinationId).slice(0, 3);
   const featuredReviews = reviews.slice(0, 3);
 
+  const handleRemoveFromSeason = (placeId: string, season: SeasonType) => {
+    const target = places.find((p) => p.id === placeId);
+    if (!target) return;
+    const updated = (target.featuredInSeasons ?? []).filter((s) => s !== season);
+    editPlace(target.id, { featuredInSeasons: updated });
+    showToast(`Removed "${target.name}" from ${season} recommendations.`, 'info');
+  };
+
   return (
     <div className="min-h-screen">
       {/* Hero */}
       <section className="relative">
         <div className="absolute inset-0 h-[70vh]">
-          <img src={dest.heroImage} alt={dest.name} className="h-full w-full object-cover" />
+          <img src={dest.heroImage} alt={dest.name} fetchpriority="high" decoding="sync" className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-b from-navy-900/60 via-navy-900/40 to-navy-50" />
         </div>
         <div className="container-page relative flex min-h-[70vh] flex-col justify-end pb-12 pt-28">
@@ -96,6 +174,62 @@ export function DestinationPage({ destinationId }: { destinationId: string }) {
               <p className="mt-1 text-sand-700">Visit orchards for fresh Alphonso mangoes straight from the tree.</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ── SEASONAL RECOMMENDATIONS SECTION ── */}
+      <section className="container-page py-10 my-4 rounded-4xl bg-gradient-to-br from-navy-900 via-ocean-950 to-navy-950 p-6 sm:p-10 text-white shadow-2xl relative overflow-hidden">
+        <div className="absolute right-0 top-0 opacity-10 blur-2xl pointer-events-none w-96 h-96 bg-ocean-400 rounded-full" />
+        
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
+          <div>
+            <span className="chip bg-ocean-500/20 text-ocean-300 border border-ocean-400/30 backdrop-blur text-xs uppercase tracking-wider font-bold">
+              🌦️ Seasonal Smart Recommendations
+            </span>
+            <h2 className="mt-3 font-display text-2xl sm:text-4xl font-extrabold text-white">
+              Must Experience This {activeTabMeta.label} {activeTabMeta.emoji}
+            </h2>
+            <p className="mt-2 text-sm sm:text-base text-white/70 max-w-xl">
+              {activeTabMeta.desc}. Tailored live recommendations with video previews and instant trip planning.
+            </p>
+          </div>
+
+          {/* Season Switcher Tabs */}
+          <div className="flex bg-white/10 p-1.5 rounded-2xl backdrop-blur border border-white/10 shrink-0">
+            {SEASON_TABS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setActiveSeason(t.id)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  activeSeason === t.id
+                    ? `${t.color} shadow-md scale-[1.02]`
+                    : 'text-white/70 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <span>{t.emoji}</span> {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Seasonal Cards Grid */}
+        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 relative z-10">
+          {seasonalPlaces.map((p, i) => (
+            <SeasonalPlaceCard
+              key={p.id}
+              place={p}
+              seasonLabel={`${activeTabMeta.label} Highlight`}
+              seasonEmoji={activeTabMeta.emoji}
+              onOpenVideo={(placeToPreview) => setVideoModalPlace(placeToPreview)}
+              onEditPlace={(placeToEdit) => {
+                const full = places.find((fp) => fp.id === placeToEdit.id);
+                if (full) setEditingPlace(full);
+              }}
+              onRemoveFromSeason={(placeToRemove) => handleRemoveFromSeason(placeToRemove.id, activeSeason)}
+              onDeletePlace={(placeToDelete) => setDeletingPlaceId(placeToDelete.id)}
+              index={i}
+            />
+          ))}
         </div>
       </section>
 
@@ -234,6 +368,37 @@ export function DestinationPage({ destinationId }: { destinationId: string }) {
           </button>
         </div>
       </section>
+
+      {/* Video Preview Modal Lightbox */}
+      <VideoModal place={videoModalPlace} onClose={() => setVideoModalPlace(null)} />
+
+      {/* Admin Place Editor Modal */}
+      {editingPlace && (
+        <PlaceEditor
+          place={editingPlace === 'new' ? undefined : editingPlace}
+          onClose={() => setEditingPlace(null)}
+        />
+      )}
+
+      {/* Admin Delete Place Confirm Dialog */}
+      {deletingPlaceId && (
+        <ConfirmDialog
+          title="Delete Place?"
+          message="This will permanently remove this place from the platform. This action cannot be undone."
+          confirmLabel="Delete"
+          danger
+          onConfirm={() => {
+            try {
+              removePlace(deletingPlaceId);
+              showToast('Place deleted successfully.', 'info');
+            } catch (err) {
+              showToast(err instanceof Error ? err.message : 'Delete failed', 'error');
+            }
+            setDeletingPlaceId(null);
+          }}
+          onCancel={() => setDeletingPlaceId(null)}
+        />
+      )}
     </div>
   );
 }

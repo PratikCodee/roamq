@@ -5,6 +5,8 @@ import {
   Loader2, ChevronLeft, X, ShieldCheck, Eye, EyeOff,
 } from 'lucide-react';
 import { useRouter } from '@/router/Router';
+import { useAppData } from '@/context/AppDataContext';
+import { emailExists } from '@/store/db';
 
 // ─── Business Categories ──────────────────────────────────────────────────────
 const CATEGORIES = [
@@ -518,6 +520,7 @@ function RegistrationSuccess({ businessName, onGoHome }: { businessName: string;
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export function BusinessRegisterPage() {
   const { navigate } = useRouter();
+  const { addBusiness, addUser } = useAppData();
   const [step, setStep] = useState(0);
   const [data, setData] = useState<FormData>(empty);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
@@ -564,9 +567,37 @@ export function BusinessRegisterPage() {
       setStep((s) => s + 1);
       return;
     }
+    // Final check for email
+    if (emailExists(data.email)) {
+      setErrors({ email: 'An account with this email already exists.' });
+      return;
+    }
     // Final submit
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 800));
+    
+    addBusiness({
+      businessName: data.businessName.trim(),
+      ownerName: data.ownerName.trim(),
+      email: data.email.trim(),
+      phone: data.phone.trim(),
+      description: data.description.trim(),
+      category: data.category,
+      approvedCategory: '',
+      address: data.address.trim(),
+      location: data.location,
+      images: data.images,
+      status: 'pending',
+    });
+
+    addUser({
+      name: data.ownerName.trim(),
+      email: data.email.trim(),
+      password: data.password,
+      role: 'business',
+      status: 'pending',
+    });
+
     setLoading(false);
     setSubmitted(true);
   };
